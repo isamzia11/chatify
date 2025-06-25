@@ -1,24 +1,28 @@
+import 'dart:io';
+
+import 'package:chatify/provider/auth_provider.dart';
+import 'package:chatify/services/cloud_storage_service.dart';
+import 'package:chatify/services/db_service.dart';
+import 'package:chatify/services/media_service.dart';
 import 'package:chatify/services/navigation_service.dart';
-import 'package:chatify/services/snackbar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../provider/auth_provider.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegistrationPage extends StatefulWidget {
+  const RegistrationPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegistrationPage> createState() => _RegistrationPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegistrationPageState extends State<RegistrationPage> {
   late double _deviceHeight;
   late double _deviceWidth;
-
   late GlobalKey<FormState> _formKey;
   AuthProvider? _auth;
+  File? _image;
 
-  _LoginPageState() {
+  _RegistrationPageState() {
     _formKey = GlobalKey<FormState>();
   }
 
@@ -26,27 +30,26 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     _deviceHeight = MediaQuery.of(context).size.height;
     _deviceWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Center(
-        child: ChangeNotifierProvider<AuthProvider>.value(
-          value: AuthProvider.instance,
-          child: _loginPageUI(),
+      body: ChangeNotifierProvider<AuthProvider>.value(
+        value: AuthProvider.instance,
+        child: Container(
+          alignment: Alignment.center,
+          child: _registrationPageUI(),
         ),
       ),
     );
   }
 
-  Widget _loginPageUI() {
+  Widget _registrationPageUI() {
     return Builder(
       builder: (BuildContext _context) {
-        SnackbarService.instance.buildContext = context;
         _auth = Provider.of<AuthProvider>(_context);
         return Container(
+          height: _deviceHeight * 0.75,
+
           padding: EdgeInsets.symmetric(horizontal: _deviceWidth * 0.10),
-          height: _deviceHeight * 0.60,
-          alignment: Alignment.center,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             mainAxisSize: MainAxisSize.max,
@@ -54,8 +57,8 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               _headingWidget(),
               _inputForm(),
-              _loginButton(),
               _registerButton(),
+              _backToLoginPageButton(),
             ],
           ),
         );
@@ -72,11 +75,11 @@ class _LoginPageState extends State<LoginPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Welcome Back!',
+            "Let's get going!",
             style: TextStyle(fontSize: 35, fontWeight: FontWeight.w700),
           ),
           Text(
-            'Please login to your account',
+            'Please enter your details',
             style: TextStyle(fontSize: 25, fontWeight: FontWeight.w200),
           ),
         ],
@@ -86,17 +89,73 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _inputForm() {
     return Container(
-      height: _deviceHeight * 0.16,
+      height: _deviceHeight * 0.35,
       child: Form(
         key: _formKey,
         onChanged: () {
-          _formKey.currentState?.save();
+          _formKey.currentState!.save();
         },
+
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_emailTextField(), _passwordTextField()],
+          children: [
+            _imageSelectorWidget(),
+            _nameTextField(),
+            _emailTextField(),
+            _passwordTextField(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _imageSelectorWidget() {
+    return Center(
+      child: GestureDetector(
+        onTap: () async {
+          File? _imageFile = await MediaService.instance.getImageFromLibrary();
+          setState(() {
+            _image = _imageFile;
+          });
+        },
+        child: Container(
+          height: _deviceHeight * 0.10,
+          width: _deviceWidth * 0.10,
+
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            image: DecorationImage(
+              fit: BoxFit.cover,
+              image:
+                  _image != null
+                      ? FileImage(_image!)
+                      : NetworkImage(
+                        'https://cdn-icons-png.flaticon.com/512/10771/10771017.png',
+                      ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _nameTextField() {
+    return TextFormField(
+      autocorrect: false,
+      style: TextStyle(color: Colors.white),
+      validator: (_input) {
+        return _input!.length != 0 ? null : 'Please enter a name';
+      },
+      onSaved: (_input) {
+        _auth!.setName(_input);
+      },
+      cursorColor: Colors.white,
+      decoration: InputDecoration(
+        hintText: 'Name',
+        focusedBorder: UnderlineInputBorder(
+          borderSide: BorderSide(color: Colors.white),
         ),
       ),
     );
@@ -145,7 +204,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _loginButton() {
+  Widget _registerButton() {
     return _auth!.status == AuthStatus.Authenticating
         ? Center(child: CircularProgressIndicator(color: Colors.white))
         : Container(
@@ -153,14 +212,27 @@ class _LoginPageState extends State<LoginPage> {
           width: _deviceWidth,
           child: MaterialButton(
             onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                _auth!.loginUserWithEmailAndPassword();
-                // Login User
+              if (_formKey.currentState!.validate() && _image != null) {
+                _auth!.registerUserWithEmailAndPassword(
+                  _auth!.email!,
+                  _auth!.password!,
+                  (String _uid) async {
+                    var _result = await CloudStorageService.instance
+                        .uploadUserImage(_uid, _image!);
+                    var _imageUrl = await _result.ref.getDownloadURL();
+                    await DbService.instance.createUserInDb(
+                      _uid,
+                      _auth!.name!,
+                      _auth!.email!,
+                      _imageUrl,
+                    );
+                  },
+                );
               }
             },
             color: Colors.blue,
             child: Text(
-              'LOGIN',
+              'Register',
 
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
@@ -168,23 +240,15 @@ class _LoginPageState extends State<LoginPage> {
         );
   }
 
-  Widget _registerButton() {
+  Widget _backToLoginPageButton() {
     return GestureDetector(
       onTap: () {
-        NavigationService.instance.navigateTo('register');
+        NavigationService.instance.goBack();
       },
       child: Container(
         height: _deviceHeight * 0.06,
         width: _deviceWidth,
-        child: Text(
-          'REGISTER',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Colors.white60,
-          ),
-        ),
+        child: Icon(Icons.arrow_back, size: 40),
       ),
     );
   }
