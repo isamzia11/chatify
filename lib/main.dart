@@ -1,4 +1,5 @@
 import 'package:chatify/firebase_options.dart';
+import 'package:chatify/pages/home_page.dart';
 import 'package:chatify/pages/login_page.dart';
 import 'package:chatify/pages/registration_page.dart';
 import 'package:chatify/services/navigation_service.dart';
@@ -39,6 +40,7 @@ class MyApp extends StatelessWidget {
       routes: {
         "login": (BuildContext _context) => LoginPage(),
         "register": (BuildContext _context) => RegistrationPage(),
+        "home": (BuildContext _context) => HomePage(),
       },
       home: const LoginPage(),
     );

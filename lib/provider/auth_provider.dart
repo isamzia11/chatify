@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider() {
     _auth = FirebaseAuth.instance;
     status = AuthStatus.NotAuthenticated;
+    _checkCurrentUserisAuthenticated();
   }
 
   void setName(String? name) {
@@ -64,6 +65,21 @@ class AuthProvider extends ChangeNotifier {
   //   }
   //   notifyListeners();
   // }
+
+  void _autoLogin() {
+    if (user != null) {
+      NavigationService.instance.navigateToReplacement('home');
+    }
+  }
+
+  void _checkCurrentUserisAuthenticated() async {
+    user = await _auth.currentUser!;
+    if (user != null) {
+      notifyListeners();
+      _autoLogin();
+    }
+  }
+
   Future<void> loginUserWithEmailAndPassword() async {
     if (_email == null || _password == null) {
       status = AuthStatus.Error;
@@ -86,6 +102,7 @@ class AuthProvider extends ChangeNotifier {
       SnackbarService.instance.showSnackBarSuccess('Logged in Successfully');
       // Update lastSeen time
       // Navigate to HomePage
+      NavigationService.instance.navigateToReplacement('home');
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
         status = AuthStatus.UserNotFound;
@@ -125,6 +142,7 @@ class AuthProvider extends ChangeNotifier {
 
       NavigationService.instance.goBack();
       // Navigate to Home page
+      NavigationService.instance.navigateToReplacement('home');
     } catch (e) {
       status = AuthStatus.Error;
       SnackbarService.instance.showSnackBarError('Error Registering User');
