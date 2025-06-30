@@ -18,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   String? _email;
   String? _password;
   String? _name;
+  String? _searchText;
   static AuthProvider instance = AuthProvider();
 
   AuthProvider() {
@@ -44,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
   String? get email => _email;
   String? get password => _password;
   String? get name => _name;
+  String? get searchText => _searchText;
 
   // void loginUserWithEmailAndPassword(String _email, String _password) async {
   //   status = AuthStaus.Authenticating;
@@ -72,11 +74,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void _checkCurrentUserisAuthenticated() async {
-    user = await _auth.currentUser!;
+  void setSearchText(String? text) {
+    _searchText = text;
+    notifyListeners();
+  }
+
+  // void _checkCurrentUserisAuthenticated() async {
+  //   user = await _auth.currentUser;
+  //   final firebaseAuth = _auth;
+
+  //   if (firebaseAuth == null) {
+  //     status = AuthStatus.NotAuthenticated;
+  //     notifyListeners();
+  //     return;
+  //   }
+  //   if (user != null) {
+  //     notifyListeners();
+  //     _autoLogin();
+  //   }
+  // }
+  void _checkCurrentUserisAuthenticated() {
+    user = _auth.currentUser;
     if (user != null) {
+      status = AuthStatus.Authenticated;
       notifyListeners();
       _autoLogin();
+    } else {
+      status = AuthStatus.NotAuthenticated;
+      notifyListeners();
     }
   }
 
@@ -148,5 +173,19 @@ class AuthProvider extends ChangeNotifier {
       SnackbarService.instance.showSnackBarError('Error Registering User');
     }
     notifyListeners();
+  }
+
+  void logoutUser(Future<void> onSuccess()) async {
+    try {
+      await _auth.signOut();
+      user = null;
+      await onSuccess();
+      await NavigationService.instance.navigateToReplacement("login");
+      SnackbarService.instance.showSnackBarSuccess('Logged Out Successfully!');
+    } catch (e) {
+      SnackbarService.instance.showSnackBarError('Error Logging Out');
+    }
+    notifyListeners();
+    return;
   }
 }
