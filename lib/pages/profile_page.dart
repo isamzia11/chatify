@@ -10,7 +10,7 @@ class ProfilePage extends StatelessWidget {
   final double height;
   final double width;
 
-  AuthProvider? _auth;
+  late AuthProvider _auth;
 
   ProfilePage({super.key, required this.height, required this.width});
 
@@ -82,7 +82,7 @@ class ProfilePage extends StatelessWidget {
       width: _imageRadius,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_imageRadius),
-        image: DecorationImage(fit: BoxFit.fill, image: NetworkImage(_image)),
+        image: DecorationImage(fit: BoxFit.cover, image: NetworkImage(_image)),
       ),
     );
   }
@@ -118,7 +118,7 @@ class ProfilePage extends StatelessWidget {
       child: MaterialButton(
         color: Colors.red,
         onPressed: () {
-          _auth?.logoutUser(() async {
+          _auth.logoutUser(() async {
             return;
           });
         },

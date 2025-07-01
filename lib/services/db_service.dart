@@ -1,5 +1,5 @@
 import 'package:chatify/models/contact.dart';
-import 'package:chatify/models/conversation_snippet.dart';
+import 'package:chatify/models/conversation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DbService {
@@ -27,6 +27,11 @@ class DbService {
         "lastSeen": DateTime.now().toUtc(),
       });
     } catch (e) {}
+  }
+
+  Future<void> updateUserLastSeenTime(String _userID) {
+    var _ref = _db!.collection(_userCollection).doc(_userID);
+    return _ref.update({"lastSeen": Timestamp.now()});
   }
 
   Stream<Contact> getUserData(String _userID) {
@@ -57,6 +62,13 @@ class DbService {
       return _snapshot.docs.map((_doc) {
         return Contact.fromFirestore(_doc);
       }).toList();
+    });
+  }
+
+  Stream getConversation(String _conversationID) {
+    var _ref = _db!.collection(_converationsCollection).doc(_conversationID);
+    return _ref.snapshots().map((_snapshot) {
+      return Conversation.fromFirestore(_snapshot);
     });
   }
 }

@@ -1,6 +1,8 @@
-import 'package:chatify/models/conversation_snippet.dart';
+import 'package:chatify/models/conversation.dart';
+import 'package:chatify/pages/conversation_page.dart';
 import 'package:chatify/provider/auth_provider.dart';
 import 'package:chatify/services/db_service.dart';
+import 'package:chatify/services/navigation_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -51,29 +53,50 @@ class RecentConversationPage extends StatelessWidget {
 
               var _userData = _snapshot.data!;
 
-              return ListView.builder(
-                itemCount: _userData.length,
-                itemBuilder: (_context, _index) {
-                  return ListTile(
-                    title: Text(_userData[_index].name!),
-                    subtitle: Text(_userData[_index].lastMessage!),
-                    leading: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(100),
-                        image: DecorationImage(
-                          fit: BoxFit.cover,
-                          image: NetworkImage(_userData[_index].image!),
+              return _userData.length != 0
+                  ? ListView.builder(
+                    itemCount: _userData.length,
+                    itemBuilder: (_context, _index) {
+                      return ListTile(
+                        title: Text(_userData[_index].name!),
+                        subtitle: Text(_userData[_index].lastMessage!),
+                        onTap: () {
+                          NavigationService.instance.navigateToRoute(
+                            MaterialPageRoute(
+                              builder: (BuildContext _context) {
+                                return ConversationPage(
+                                  _userData[_index].conversationID!,
+                                  _userData[_index].id!,
+                                  _userData[_index].name!,
+                                  _userData[_index].image!,
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        leading: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(100),
+                            image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: NetworkImage(_userData[_index].image!),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    trailing: listTileTrailingWidget(
-                      _userData[_index].timeStamp!,
+                        trailing: listTileTrailingWidget(
+                          _userData[_index].timeStamp!,
+                        ),
+                      );
+                    },
+                  )
+                  : Center(
+                    child: Text(
+                      'No Conversations yet!',
+                      style: TextStyle(fontSize: 20, color: Colors.white30),
                     ),
                   );
-                },
-              );
             },
           ),
         );
@@ -90,6 +113,7 @@ class RecentConversationPage extends StatelessWidget {
       mainAxisSize: MainAxisSize.max,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
+        Text('Last Message', style: TextStyle(fontSize: 15)),
         Text(
           timeago.format(lastMessageTimeStamp.toDate()),
           style: TextStyle(fontSize: 15),

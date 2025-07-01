@@ -1,3 +1,5 @@
+import 'package:chatify/pages/conversation_page.dart';
+import 'package:chatify/services/db_service.dart';
 import 'package:chatify/services/navigation_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +20,7 @@ class AuthProvider extends ChangeNotifier {
   String? _email;
   String? _password;
   String? _name;
-  String? _searchText;
+  String? _searchText = '';
   static AuthProvider instance = AuthProvider();
 
   AuthProvider() {
@@ -68,9 +70,9 @@ class AuthProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  void _autoLogin() {
+  void _autoLogin() async {
     if (user != null) {
-      NavigationService.instance.navigateToReplacement('home');
+      return NavigationService.instance.navigateToReplacement('home');
     }
   }
 
@@ -93,12 +95,28 @@ class AuthProvider extends ChangeNotifier {
   //     _autoLogin();
   //   }
   // }
-  void _checkCurrentUserisAuthenticated() {
+  // void _checkCurrentUserisAuthenticated() {
+  //   user = _auth.currentUser;
+  //   if (user != null) {
+  //     status = AuthStatus.Authenticated;
+  //     notifyListeners();
+  //     _autoLogin();
+  //   } else {
+  //     status = AuthStatus.NotAuthenticated;
+  //     notifyListeners();
+  //   }
+  // }
+  void _checkCurrentUserisAuthenticated() async {
     user = _auth.currentUser;
+
     if (user != null) {
       status = AuthStatus.Authenticated;
       notifyListeners();
-      _autoLogin();
+
+      // ✅ Defer navigation until after first frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _autoLogin();
+      });
     } else {
       status = AuthStatus.NotAuthenticated;
       notifyListeners();
@@ -125,7 +143,7 @@ class AuthProvider extends ChangeNotifier {
       user = _result.user;
       status = AuthStatus.Authenticated;
       SnackbarService.instance.showSnackBarSuccess('Logged in Successfully');
-      // Update lastSeen time
+      await DbService.instance.updateUserLastSeenTime(user!.uid);
       // Navigate to HomePage
       NavigationService.instance.navigateToReplacement('home');
     } on FirebaseAuthException catch (e) {
@@ -164,7 +182,7 @@ class AuthProvider extends ChangeNotifier {
       SnackbarService.instance.showSnackBarSuccess(
         'User signed in successfully',
       );
-
+      await DbService.instance.updateUserLastSeenTime(user!.uid);
       NavigationService.instance.goBack();
       // Navigate to Home page
       NavigationService.instance.navigateToReplacement('home');

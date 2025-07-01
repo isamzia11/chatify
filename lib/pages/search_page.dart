@@ -18,7 +18,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   String? searchText;
-  AuthProvider? _auth;
+  late AuthProvider _auth;
 
   _SearchPageState() {
     searchText = '';
@@ -49,31 +49,35 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _userSearchField() {
     return Container(
-      height: this.widget.height * 0.08,
-      width: this.widget.width,
-      padding: EdgeInsets.symmetric(vertical: this.widget.height * 0.02),
-      child: TextField(
-        autocorrect: false,
-        style: TextStyle(color: Colors.white),
-        onSubmitted: (_input) {
-          Provider.of<AuthProvider>(
-            context,
-            listen: false,
-          ).setSearchText(_input);
+      height: widget.height * 0.08,
+      width: widget.width,
+      padding: EdgeInsets.symmetric(vertical: widget.height * 0.02),
+      child: Builder(
+        builder: (context) {
+          return TextField(
+            autocorrect: false,
+            style: TextStyle(color: Colors.white),
+            onSubmitted: (_input) {
+              Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              ).setSearchText(_input);
+            },
+            decoration: InputDecoration(
+              prefixIcon: Icon(Icons.search, color: Colors.white),
+              labelStyle: TextStyle(color: Colors.white),
+              label: Text('Search'),
+              border: OutlineInputBorder(borderSide: BorderSide.none),
+            ),
+          );
         },
-        decoration: InputDecoration(
-          prefixIcon: Icon(Icons.search, color: Colors.white),
-          labelStyle: TextStyle(color: Colors.white),
-          label: Text('Search'),
-          border: OutlineInputBorder(borderSide: BorderSide.none),
-        ),
       ),
     );
   }
 
   Widget _userListView() {
     return StreamBuilder<List<Contact>>(
-      stream: DbService.instance.getUsersInDB(_auth!.searchText!),
+      stream: DbService.instance.getUsersInDB(_auth.searchText!),
       builder: (_context, _snapshot) {
         if (!_snapshot.hasData || _snapshot.data == null) {
           return Center(
@@ -86,6 +90,7 @@ class _SearchPageState extends State<SearchPage> {
         }
 
         var _usersData = _snapshot.data!;
+        _usersData.removeWhere((_contact) => _contact.id == _auth.user!.uid);
         return Container(
           height: this.widget.height * 0.75,
           child: ListView.builder(
@@ -94,7 +99,7 @@ class _SearchPageState extends State<SearchPage> {
               var _userData = _usersData[_index];
               var _currentTime = DateTime.now();
               var _isUserActive =
-                  !_userData.lastSeen!.toDate().isBefore(
+                  !_userData.lastSeen!.toDate().isAfter(
                     _currentTime.subtract(Duration(hours: 1)),
                   );
 
@@ -103,6 +108,7 @@ class _SearchPageState extends State<SearchPage> {
                 leading: Container(
                   height: 50,
                   width: 50,
+
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(100),
                     image: DecorationImage(
@@ -110,7 +116,7 @@ class _SearchPageState extends State<SearchPage> {
                         _userData.image ??
                             'https://cdn-icons-png.flaticon.com/512/10771/10771017.png',
                       ),
-                      fit: BoxFit.fill,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),

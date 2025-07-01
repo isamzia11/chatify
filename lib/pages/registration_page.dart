@@ -5,6 +5,7 @@ import 'package:chatify/services/cloud_storage_service.dart';
 import 'package:chatify/services/db_service.dart';
 import 'package:chatify/services/media_service.dart';
 import 'package:chatify/services/navigation_service.dart';
+import 'package:chatify/services/snackbar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +20,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   late double _deviceHeight;
   late double _deviceWidth;
   late GlobalKey<FormState> _formKey;
-  AuthProvider? _auth;
+  late AuthProvider _auth;
   File? _image;
 
   _RegistrationPageState() {
@@ -45,6 +46,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   Widget _registrationPageUI() {
     return Builder(
       builder: (BuildContext _context) {
+        SnackbarService.instance.buildContext = _context;
         _auth = Provider.of<AuthProvider>(_context);
         return Container(
           height: _deviceHeight * 0.75,
@@ -149,7 +151,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         return _input!.length != 0 ? null : 'Please enter a name';
       },
       onSaved: (_input) {
-        _auth!.setName(_input);
+        _auth.setName(_input);
       },
       cursorColor: Colors.white,
       decoration: InputDecoration(
@@ -171,7 +173,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
             : 'Please enter a valid email';
       },
       onSaved: (_input) {
-        _auth!.setEmail(_input);
+        _auth.setEmail(_input);
       },
       cursorColor: Colors.white,
       decoration: InputDecoration(
@@ -192,7 +194,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         return _input!.length != 0 ? null : 'Please enter the password';
       },
       onSaved: (_input) {
-        _auth!.setPassword(_input);
+        _auth.setPassword(_input);
       },
       cursorColor: Colors.white,
       decoration: InputDecoration(
@@ -205,7 +207,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   }
 
   Widget _registerButton() {
-    return _auth!.status == AuthStatus.Authenticating
+    return _auth.status == AuthStatus.Authenticating
         ? Center(child: CircularProgressIndicator(color: Colors.white))
         : Container(
           height: _deviceHeight * 0.06,
@@ -213,17 +215,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
           child: MaterialButton(
             onPressed: () {
               if (_formKey.currentState!.validate() && _image != null) {
-                _auth!.registerUserWithEmailAndPassword(
-                  _auth!.email!,
-                  _auth!.password!,
+                _auth.registerUserWithEmailAndPassword(
+                  _auth.email!,
+                  _auth.password!,
                   (String _uid) async {
                     var _result = await CloudStorageService.instance
                         .uploadUserImage(_uid, _image!);
                     var _imageUrl = await _result.ref.getDownloadURL();
                     await DbService.instance.createUserInDb(
                       _uid,
-                      _auth!.name!,
-                      _auth!.email!,
+                      _auth.name!,
+                      _auth.email!,
                       _imageUrl,
                     );
                   },

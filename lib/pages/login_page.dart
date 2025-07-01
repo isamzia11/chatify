@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   late double _deviceWidth;
 
   late GlobalKey<FormState> _formKey;
-  AuthProvider? _auth;
+  late AuthProvider _auth;
 
   _LoginPageState() {
     _formKey = GlobalKey<FormState>();
@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
             : 'Please enter a valid email';
       },
       onSaved: (_input) {
-        _auth!.setEmail(_input);
+        _auth.setEmail(_input);
       },
       cursorColor: Colors.white,
       decoration: InputDecoration(
@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
         return _input!.length != 0 ? null : 'Please enter the password';
       },
       onSaved: (_input) {
-        _auth!.setPassword(_input);
+        _auth.setPassword(_input);
       },
       cursorColor: Colors.white,
       decoration: InputDecoration(
@@ -146,7 +146,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _loginButton() {
-    return _auth!.status == AuthStatus.Authenticating
+    return _auth.status == AuthStatus.Authenticating
         ? Center(child: CircularProgressIndicator(color: Colors.white))
         : Container(
           height: _deviceHeight * 0.06,
