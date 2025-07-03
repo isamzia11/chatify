@@ -1,6 +1,9 @@
 import 'package:chatify/models/contact.dart';
+import 'package:chatify/pages/conversation_page.dart';
 import 'package:chatify/provider/auth_provider.dart';
 import 'package:chatify/services/db_service.dart';
+import 'package:chatify/services/navigation_service.dart';
+import 'package:chatify/services/snackbar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
@@ -20,9 +23,6 @@ class _SearchPageState extends State<SearchPage> {
   String? searchText;
   late AuthProvider _auth;
 
-  _SearchPageState() {
-    searchText = '';
-  }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -77,7 +77,7 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _userListView() {
     return StreamBuilder<List<Contact>>(
-      stream: DbService.instance.getUsersInDB(_auth.searchText!),
+      stream: DbService.instance.getUsersInDB(_auth.searchText ?? ''),
       builder: (_context, _snapshot) {
         if (!_snapshot.hasData || _snapshot.data == null) {
           return Center(
@@ -98,13 +98,53 @@ class _SearchPageState extends State<SearchPage> {
             itemBuilder: (BuildContext _context, int _index) {
               var _userData = _usersData[_index];
               var _currentTime = DateTime.now();
+              var _recepientID = _usersData[_index].id;
               var _isUserActive =
-                  !_userData.lastSeen!.toDate().isAfter(
-                    _currentTime.subtract(Duration(hours: 1)),
+                  _userData.lastSeen != null && // Add null check for lastSeen
+                  _userData.lastSeen!.toDate().isAfter(
+                    _currentTime.subtract(const Duration(hours: 1)),
                   );
 
               return ListTile(
-                title: Text(_userData.name!),
+                title: Text(_userData.name ?? 'Unknown User'),
+                onTap: () {
+                  final currentUser = _auth.user;
+                  final recipientID = _recepientID;
+                  final name = _userData.name;
+                  final image = _userData.image;
+
+                  // 🔒 Defensive null checks
+                  if (currentUser == null ||
+                      recipientID == null ||
+                      name == null ||
+                      image == null) {
+                    SnackbarService.instance.showSnackBarError(
+                      'Missing user info.',
+                    );
+                    return;
+                  }
+
+                  DbService.instance.createOrGetConversation(
+                    currentUser.uid,
+                    recipientID,
+                    name,
+                    image,
+                    (String conversationID) async {
+                      NavigationService.instance.navigateToRoute(
+                        MaterialPageRoute(
+                          builder:
+                              (_context) => ConversationPage(
+                                conversationID,
+                                recipientID,
+                                name,
+                                image,
+                              ),
+                        ),
+                      );
+                    },
+                  );
+                },
+
                 leading: Container(
                   height: 50,
                   width: 50,
@@ -138,8 +178,10 @@ class _SearchPageState extends State<SearchPage> {
                           ),
                         )
                         : Text(
-                          timeago.format(_userData.lastSeen!.toDate()),
-                          style: TextStyle(fontSize: 15),
+                          _userData.lastSeen != null
+                              ? timeago.format(_userData.lastSeen!.toDate())
+                              : 'N/A', // Fallback for null lastSeen
+                          style: TextStyle(fontSize: 15, color: Colors.white70),
                         ),
                   ],
                 ),

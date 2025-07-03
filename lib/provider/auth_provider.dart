@@ -17,10 +17,10 @@ class AuthProvider extends ChangeNotifier {
   User? user;
   late AuthStatus status;
   late FirebaseAuth _auth;
-  String? _email;
-  String? _password;
-  String? _name;
-  String? _searchText = '';
+  late String? _email;
+  late String? _password;
+  late String? _name;
+  late String? _searchText = '';
   static AuthProvider instance = AuthProvider();
 
   AuthProvider() {
@@ -70,9 +70,23 @@ class AuthProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
+  Future<void> initialize() async {
+    user = _auth.currentUser;
+    if (user != null) {
+      status = AuthStatus.Authenticated;
+    } else {
+      status = AuthStatus.NotAuthenticated;
+    }
+    notifyListeners();
+  }
+
   void _autoLogin() async {
     if (user != null) {
-      return NavigationService.instance.navigateToReplacement('home');
+      // User is authenticated → Go to HOME
+      NavigationService.instance.navigateToReplacement('home');
+    } else {
+      // User not authenticated → Stay or go to login
+      NavigationService.instance.navigateToReplacement('login');
     }
   }
 

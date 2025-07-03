@@ -2,6 +2,7 @@ import 'package:chatify/firebase_options.dart';
 import 'package:chatify/pages/home_page.dart';
 import 'package:chatify/pages/login_page.dart';
 import 'package:chatify/pages/registration_page.dart';
+import 'package:chatify/provider/auth_provider.dart';
 import 'package:chatify/services/navigation_service.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/material.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AuthProvider.instance.initialize();
 
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity, // or .safetyNet
@@ -42,6 +44,7 @@ class MyApp extends StatelessWidget {
         "register": (BuildContext _context) => RegistrationPage(),
         "home": (BuildContext _context) => HomePage(),
       },
+
       home: const LoginPage(),
     );
   }

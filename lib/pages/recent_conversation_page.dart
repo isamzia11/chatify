@@ -1,4 +1,5 @@
 import 'package:chatify/models/conversation.dart';
+import 'package:chatify/models/message.dart';
 import 'package:chatify/pages/conversation_page.dart';
 import 'package:chatify/provider/auth_provider.dart';
 import 'package:chatify/services/db_service.dart';
@@ -53,13 +54,19 @@ class RecentConversationPage extends StatelessWidget {
 
               var _userData = _snapshot.data!;
 
-              return _userData.length != 0
+              return _userData.isNotEmpty
                   ? ListView.builder(
                     itemCount: _userData.length,
                     itemBuilder: (_context, _index) {
+                      final Timestamp lastMessageTimeStamp =
+                          _userData[_index].timeStamp ?? Timestamp.now();
                       return ListTile(
-                        title: Text(_userData[_index].name!),
-                        subtitle: Text(_userData[_index].lastMessage!),
+                        title: Text(_userData[_index].name ?? 'Unknown User'),
+                        subtitle: Text(
+                          _userData[_index].type == MessageType.Text
+                              ? _userData[_index].lastMessage! ?? ""
+                              : "Attachment Image",
+                        ),
                         onTap: () {
                           NavigationService.instance.navigateToRoute(
                             MaterialPageRoute(
@@ -67,8 +74,9 @@ class RecentConversationPage extends StatelessWidget {
                                 return ConversationPage(
                                   _userData[_index].conversationID!,
                                   _userData[_index].id!,
-                                  _userData[_index].name!,
-                                  _userData[_index].image!,
+                                  _userData[_index].name ?? 'Unknown',
+                                  _userData[_index].image ??
+                                      'https://via.placeholder.com/150',
                                 );
                               },
                             ),
@@ -81,13 +89,14 @@ class RecentConversationPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(100),
                             image: DecorationImage(
                               fit: BoxFit.cover,
-                              image: NetworkImage(_userData[_index].image!),
+                              image: NetworkImage(
+                                _userData[_index].image ??
+                                    'https://via.placeholder.com/150',
+                              ),
                             ),
                           ),
                         ),
-                        trailing: listTileTrailingWidget(
-                          _userData[_index].timeStamp!,
-                        ),
+                        trailing: listTileTrailingWidget(lastMessageTimeStamp),
                       );
                     },
                   )
